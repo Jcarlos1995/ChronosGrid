@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(ELECTRON_START_URL=http://localhost:3000 npx electron .)",
+      "Bash(powershell -Command \"Start-Sleep 6; Get-Process electron -ErrorAction SilentlyContinue | Select-Object -First 3 Id,ProcessName,MainWindowTitle | Format-Table -AutoSize\")",
+      "PowerShell(Start-Sleep 8; $p = Get-Process electron -ErrorAction SilentlyContinue; if \\($p\\) { $p | Where-Object { $_.MainWindowTitle } | Select-Object Id, MainWindowTitle | Format-Table -AutoSize; Write-Output \"Electron processes running: $\\($p.Count\\)\" } else { Write-Output \"No electron process found\" })",
+      "PowerShell(Get-Process electron -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -Confirm:$false)",
+      "Bash(awk '{print $5, $9, $10, $11}')",
+      "Bash(./ChronosGrid.exe)",
+      "Bash(powershell -Command 'Get-Process ChronosGrid -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | Select-Object Id, MainWindowTitle | Format-Table -AutoSize')",
+      "PowerShell(Get-Process ChronosGrid -ErrorAction SilentlyContinue)",
+      "Bash(curl -s -o /dev/null -w \"installer HTTP status: %{http_code}, size: %{size_download}\\\\n\" -r 0-1023 \"http://localhost:3000/download/ChronosGrid-Setup-1.0.0.exe\")",
+      "Bash(powershell -Command 'Get-Process ChronosGrid -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle } | Select-Object Id, MainWindowTitle | Format-Table -AutoSize; $c = \\(Get-Process ChronosGrid -ErrorAction SilentlyContinue\\).Count; Write-Output \"process count: $c\"')",
+      "Bash(node -e \"const s=require\\('./serviceAccount.json'\\); console.log\\('project_id:', s.project_id\\); console.log\\('client_email:', s.client_email\\);\")",
+      "Bash(npx firebase-tools *)",
+      "Bash(curl -s -o /dev/null -w \"GET /repos HTTP %{http_code}\\\\n\" https://api.github.com/repos/Jcarlos1995/ChronosGrid)",
+      "Bash(curl -s https://api.github.com/repos/Jcarlos1995/ChronosGrid)",
+      "Bash(curl -s -o /dev/null -w \"GET /commits HTTP %{http_code}\\\\n\" https://api.github.com/repos/Jcarlos1995/ChronosGrid/commits)"
+    ]
+  }
+}

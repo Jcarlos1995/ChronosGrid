@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+release/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Firebase service account — private key, never commit or deploy
+serviceAccount.json
+.firebase/
+
+# Built desktop installers (distributed via GitHub Releases, not git)
+public/download/
