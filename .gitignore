@@ -14,3 +14,4 @@ serviceAccount.json
 
 # Built desktop installers (distributed via GitHub Releases, not git)
 public/download/
+.claude/
