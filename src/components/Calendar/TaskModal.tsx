@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Calendar, Clock, DollarSign, Trash2, Edit2, CheckCircle, Circle, Save, Tag } from 'lucide-react';
 import { Task, AppSettings } from '../../types';
 import { formatCurrency, currencies } from '../../currencies';
@@ -40,6 +40,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [hasCost, setHasCost] = useState(false);
   const [cost, setCost] = useState('');
   const [isEditing, setIsEditing] = useState<string | null>(null);
+
+  // Close the modal when the Escape key is pressed
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const categoryLabel = (cat: string): string => {
     switch (cat) {
@@ -157,11 +166,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const activeCurrency = currencies.find(c => c.code === settings.currency) || currencies[0];
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-40 overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-40 overflow-y-auto"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-xl shadow-lg border border-slate-200 max-w-4xl w-full overflow-hidden flex flex-col md:flex-row h-full max-h-[85vh]"
       >
         {/* Left Side: Daily Tasks List */}

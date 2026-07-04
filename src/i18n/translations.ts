@@ -90,6 +90,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'Today',
     'calendar.prevMonth': 'Previous Month',
     'calendar.nextMonth': 'Next Month',
+    'calendar.prevYear': 'Previous Year',
+    'calendar.nextYear': 'Next Year',
     'calendar.addTaskTitle': 'Add task directly',
     'calendar.more': '+{count} MORE',
 
@@ -304,6 +306,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'Hoy',
     'calendar.prevMonth': 'Mes anterior',
     'calendar.nextMonth': 'Mes siguiente',
+    'calendar.prevYear': 'Año anterior',
+    'calendar.nextYear': 'Año siguiente',
     'calendar.addTaskTitle': 'Agregar tarea directamente',
     'calendar.more': '+{count} MÁS',
 
@@ -518,6 +522,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': "Aujourd'hui",
     'calendar.prevMonth': 'Mois précédent',
     'calendar.nextMonth': 'Mois suivant',
+    'calendar.prevYear': 'Année précédente',
+    'calendar.nextYear': 'Année suivante',
     'calendar.addTaskTitle': 'Ajouter une tâche directement',
     'calendar.more': '+{count} DE PLUS',
 
@@ -732,6 +738,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'Heute',
     'calendar.prevMonth': 'Vorheriger Monat',
     'calendar.nextMonth': 'Nächster Monat',
+    'calendar.prevYear': 'Vorheriges Jahr',
+    'calendar.nextYear': 'Nächstes Jahr',
     'calendar.addTaskTitle': 'Aufgabe direkt hinzufügen',
     'calendar.more': '+{count} MEHR',
 
@@ -946,6 +954,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'Oggi',
     'calendar.prevMonth': 'Mese precedente',
     'calendar.nextMonth': 'Mese successivo',
+    'calendar.prevYear': 'Anno precedente',
+    'calendar.nextYear': 'Anno successivo',
     'calendar.addTaskTitle': 'Aggiungi attività direttamente',
     'calendar.more': '+{count} ALTRI',
 
@@ -1160,6 +1170,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'Hoje',
     'calendar.prevMonth': 'Mês anterior',
     'calendar.nextMonth': 'Mês seguinte',
+    'calendar.prevYear': 'Ano anterior',
+    'calendar.nextYear': 'Ano seguinte',
     'calendar.addTaskTitle': 'Adicionar tarefa diretamente',
     'calendar.more': '+{count} MAIS',
 
@@ -1374,6 +1386,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'Сегодня',
     'calendar.prevMonth': 'Предыдущий месяц',
     'calendar.nextMonth': 'Следующий месяц',
+    'calendar.prevYear': 'Предыдущий год',
+    'calendar.nextYear': 'Следующий год',
     'calendar.addTaskTitle': 'Добавить задачу напрямую',
     'calendar.more': '+{count} ЕЩЁ',
 
@@ -1588,6 +1602,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'اليوم',
     'calendar.prevMonth': 'الشهر السابق',
     'calendar.nextMonth': 'الشهر التالي',
+    'calendar.prevYear': 'السنة السابقة',
+    'calendar.nextYear': 'السنة التالية',
     'calendar.addTaskTitle': 'إضافة مهمة مباشرة',
     'calendar.more': '+{count} أخرى',
 
@@ -1802,6 +1818,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': 'आज',
     'calendar.prevMonth': 'पिछला महीना',
     'calendar.nextMonth': 'अगला महीना',
+    'calendar.prevYear': 'पिछला वर्ष',
+    'calendar.nextYear': 'अगला वर्ष',
     'calendar.addTaskTitle': 'सीधे कार्य जोड़ें',
     'calendar.more': '+{count} अधिक',
 
@@ -2016,6 +2034,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': '今日',
     'calendar.prevMonth': '前の月',
     'calendar.nextMonth': '次の月',
+    'calendar.prevYear': '前の年',
+    'calendar.nextYear': '次の年',
     'calendar.addTaskTitle': 'タスクを直接追加',
     'calendar.more': '他{count}件',
 
@@ -2230,6 +2250,8 @@ export const translations: Record<LanguageCode, TranslationMap> = {
     'calendar.today': '今天',
     'calendar.prevMonth': '上个月',
     'calendar.nextMonth': '下个月',
+    'calendar.prevYear': '上一年',
+    'calendar.nextYear': '下一年',
     'calendar.addTaskTitle': '直接添加任务',
     'calendar.more': '还有{count}项',
 

@@ -403,24 +403,24 @@ export default function App() {
         </div>
       </main>
 
-      {/* Modal overlays */}
-      <AnimatePresence>
-        {modalOpen && selectedDate && settings && (
-          <TaskModal
-            dateStr={selectedDate}
-            tasks={tasks}
-            settings={settings}
-            onClose={() => {
-              setModalOpen(false);
-              setSelectedDate(null);
-            }}
-            onAddTask={handleAddTask}
-            onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
-            addToast={addToast}
-          />
-        )}
-      </AnimatePresence>
+      {/* Modal overlays — rendered conditionally (not via AnimatePresence) so it
+          always unmounts reliably on close; the enter animation lives on the
+          modal's inner motion.div. */}
+      {modalOpen && selectedDate && settings && (
+        <TaskModal
+          dateStr={selectedDate}
+          tasks={tasks}
+          settings={settings}
+          onClose={() => {
+            setModalOpen(false);
+            setSelectedDate(null);
+          }}
+          onAddTask={handleAddTask}
+          onUpdateTask={handleUpdateTask}
+          onDeleteTask={handleDeleteTask}
+          addToast={addToast}
+        />
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock } from 'lucide-react';
 import { Task, AppSettings } from '../../types';
 import { formatCurrency } from '../../currencies';
 import { motion } from 'motion/react';
@@ -45,14 +45,22 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     return `${year}-${mm}-${dd}`;
   };
 
-  // Move to previous month
+  // Month/year navigation. Functional updates keep rapid clicks correct
+  // (each click builds on the latest date, not a stale closure value).
   const prevMonth = () => {
-    setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
+    setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   };
 
-  // Move to next month
   const nextMonth = () => {
-    setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
+    setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  };
+
+  const prevYear = () => {
+    setCurrentDate((d) => new Date(d.getFullYear() - 1, d.getMonth(), 1));
+  };
+
+  const nextYear = () => {
+    setCurrentDate((d) => new Date(d.getFullYear() + 1, d.getMonth(), 1));
   };
 
   // Reset to today
@@ -150,6 +158,13 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           </button>
           <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
             <button
+              onClick={prevYear}
+              className="p-1.5 hover:bg-slate-50 rounded text-slate-600 transition-colors cursor-pointer"
+              title={t('calendar.prevYear')}
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+            <button
               onClick={prevMonth}
               className="p-1.5 hover:bg-slate-50 rounded text-slate-600 transition-colors cursor-pointer"
               title={t('calendar.prevMonth')}
@@ -163,6 +178,13 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               title={t('calendar.nextMonth')}
             >
               <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={nextYear}
+              className="p-1.5 hover:bg-slate-50 rounded text-slate-600 transition-colors cursor-pointer"
+              title={t('calendar.nextYear')}
+            >
+              <ChevronsRight className="w-4 h-4" />
             </button>
           </div>
         </div>
