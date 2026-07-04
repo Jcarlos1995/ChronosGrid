@@ -4,12 +4,31 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Calendar, Clock, DollarSign, Trash2, Edit2, CheckCircle, Circle, Save, Tag } from 'lucide-react';
+import { X, Plus, Calendar, Clock, DollarSign, Trash2, Edit2, CheckCircle, Circle, Save, Tag, Check } from 'lucide-react';
 import { Task, AppSettings } from '../../types';
 import { formatCurrency, currencies } from '../../currencies';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getLocale } from '../../i18n/translations';
+
+// Predefined work shifts shown when the "Work" (Lavoro) category is selected.
+// Selecting one sets the task's start/end time. Names are fixed (not translated).
+interface WorkShift {
+  name: string;
+  start: string;
+  end: string;
+}
+
+const WORK_SHIFTS: WorkShift[] = [
+  { name: 'Mattina PT', start: '07:00', end: '12:00' },
+  { name: 'Mattina FT', start: '07:00', end: '14:00' },
+  { name: 'Mattina', start: '06:30', end: '13:30' },
+  { name: 'Pomeriggio 1', start: '14:00', end: '21:00' },
+  { name: 'Pomeriggio 2', start: '14:30', end: '21:00' },
+  { name: 'Notte', start: '21:00', end: '24:00' },
+  { name: 'Smonto', start: '00:00', end: '06:30' },
+  { name: 'Riposo', start: '00:00', end: '24:00' },
+];
 
 interface TaskModalProps {
   dateStr: string;
@@ -35,11 +54,36 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const { t, language } = useLanguage();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [time, setTime] = useState('09:00');
-  const [category, setCategory] = useState('Appointment');
+  // Work is the default category, so start with its first shift's times
+  const [time, setTime] = useState(WORK_SHIFTS[0].start);
+  const [endTime, setEndTime] = useState<string>(WORK_SHIFTS[0].end);
+  const [category, setCategory] = useState('Work');
   const [hasCost, setHasCost] = useState(false);
   const [cost, setCost] = useState('');
   const [isEditing, setIsEditing] = useState<string | null>(null);
+
+  // The currently selected shift (matched by start+end), for Work category
+  const selectedShift = WORK_SHIFTS.find((s) => s.start === time && s.end === endTime) || null;
+
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    if (newCategory === 'Work') {
+      // If the current times don't match a shift, default to the first one
+      const matches = WORK_SHIFTS.some((s) => s.start === time && s.end === endTime);
+      if (!matches) {
+        setTime(WORK_SHIFTS[0].start);
+        setEndTime(WORK_SHIFTS[0].end);
+      }
+    } else {
+      // Non-work categories use a single free-form time, no end time
+      setEndTime('');
+    }
+  };
+
+  const selectShift = (shift: WorkShift) => {
+    setTime(shift.start);
+    setEndTime(shift.end);
+  };
 
   // Close the modal when the Escape key is pressed
   useEffect(() => {
@@ -76,11 +120,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     }
 
     try {
+      // End time is only meaningful for Work shifts
+      const endTimeValue = category === 'Work' ? endTime : undefined;
+
       if (isEditing) {
         await onUpdateTask(isEditing, {
           title,
           description,
           time,
+          endTime: endTimeValue,
           category,
           hasCost,
           cost: costNum,
@@ -94,6 +142,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           description,
           date: dateStr,
           time,
+          endTime: endTimeValue,
           category,
           hasCost,
           cost: costNum,
@@ -117,6 +166,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     setTitle(task.title);
     setDescription(task.description);
     setTime(task.time);
+    setEndTime(task.endTime || '');
     setCategory(task.category);
     setHasCost(task.hasCost);
     setCost(task.cost ? task.cost.toString() : '');
@@ -130,8 +180,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     setIsEditing(null);
     setTitle('');
     setDescription('');
-    setTime('09:00');
-    setCategory('Appointment');
+    setTime(WORK_SHIFTS[0].start);
+    setEndTime(WORK_SHIFTS[0].end);
+    setCategory('Work');
     setHasCost(false);
     setCost('');
   };
@@ -229,7 +280,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                         </h4>
                         <span className="flex items-center gap-1 font-mono text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md shrink-0">
                           <Clock className="w-3 h-3 text-slate-400" />
-                          {task.time}
+                          {task.endTime ? `${task.time} - ${task.endTime}` : task.time}
                         </span>
                       </div>
                       {task.description && (
@@ -308,8 +359,61 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 />
               </div>
 
-              {/* Time and Category */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Category */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('taskModal.category')}</label>
+                <div className="relative mt-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Tag className="h-4 w-4" />
+                  </div>
+                  <select
+                    value={category}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-xs"
+                  >
+                    <option value="Appointment">{t('taskModal.categoryAppointment')}</option>
+                    <option value="Work">{t('taskModal.categoryWork')}</option>
+                    <option value="Personal">{t('taskModal.categoryPersonal')}</option>
+                    <option value="Other">{t('taskModal.categoryOther')}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Schedule: shift picker for Work, single time otherwise */}
+              {category === 'Work' ? (
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('taskModal.shift')}</label>
+                  <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    {WORK_SHIFTS.map((shift) => {
+                      const isSelected = selectedShift?.name === shift.name;
+                      return (
+                        <button
+                          type="button"
+                          key={shift.name}
+                          onClick={() => selectShift(shift)}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                          }`}
+                        >
+                          <span
+                            className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                              isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-800 truncate leading-tight">{shift.name}</p>
+                            <p className="text-[10px] font-mono text-slate-500 leading-tight">{shift.start} - {shift.end}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
                 <div>
                   <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('taskModal.startTime')}</label>
                   <div className="relative mt-1">
@@ -325,26 +429,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('taskModal.category')}</label>
-                  <div className="relative mt-1">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Tag className="h-4 w-4" />
-                    </div>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-xs"
-                    >
-                      <option value="Appointment">{t('taskModal.categoryAppointment')}</option>
-                      <option value="Work">{t('taskModal.categoryWork')}</option>
-                      <option value="Personal">{t('taskModal.categoryPersonal')}</option>
-                      <option value="Other">{t('taskModal.categoryOther')}</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Description */}
               <div>

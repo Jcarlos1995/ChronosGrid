@@ -335,7 +335,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                       borderLeft: `2px solid ${settings.categoryColors[task.category] || '#6366f1'}`,
                     }}
                   >
-                    <span className="font-mono text-[8px] opacity-75 shrink-0">{task.time}</span>
+                    <span className="font-mono text-[8px] opacity-75 shrink-0">
+                      {task.endTime ? `${task.time}-${task.endTime}` : task.time}
+                    </span>
                     <span className={`truncate ${task.completed ? 'line-through opacity-50' : ''}`}>
                       {task.title}
                     </span>

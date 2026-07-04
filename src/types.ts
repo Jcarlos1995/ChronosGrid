@@ -19,7 +19,8 @@ export interface Task {
   title: string;
   description: string;
   date: string; // YYYY-MM-DD
-  time: string; // HH:MM
+  time: string; // HH:MM (start time)
+  endTime?: string; // HH:MM (end time; set for Work shifts)
   hasCost: boolean;
   cost?: number;
   currency: string; // e.g., 'EUR', 'USD', 'PEN', 'MAD'
