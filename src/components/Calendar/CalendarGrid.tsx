@@ -7,6 +7,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock } from 'lucide-react';
 import { Task, AppSettings } from '../../types';
 import { formatCurrency } from '../../currencies';
+import { getTaskColor } from '../../utils/taskColor';
 import { motion } from 'motion/react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getLocale } from '../../i18n/translations';
@@ -330,9 +331,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                       isToday ? 'bg-white/10 text-white border-l-2 border-white' : ''
                     }`}
                     style={isToday ? {} : {
-                      backgroundColor: `${settings.categoryColors[task.category] || '#6366f1'}15`,
-                      color: settings.categoryColors[task.category] || '#6366f1',
-                      borderLeft: `2px solid ${settings.categoryColors[task.category] || '#6366f1'}`,
+                      backgroundColor: `${getTaskColor(task, settings)}15`,
+                      color: getTaskColor(task, settings),
+                      borderLeft: `2px solid ${getTaskColor(task, settings)}`,
                     }}
                   >
                     <span className="font-mono text-[8px] opacity-75 shrink-0">

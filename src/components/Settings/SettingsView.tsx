@@ -6,9 +6,9 @@
 import React, { useState } from 'react';
 import { updatePassword, updateProfile } from 'firebase/auth';
 import { auth } from '../../firebase';
-import { AppSettings, UserProfile } from '../../types';
+import { AppSettings, UserProfile, WorkShift } from '../../types';
 import { currencies } from '../../currencies';
-import { Settings, Save, Lock, CircleAlert, Globe, Palette, Info, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Settings, Save, Lock, CircleAlert, Globe, Palette, Info, CheckCircle, Eye, EyeOff, Loader2, Briefcase, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { LanguageSelect } from '../UI/LanguageSelect';
@@ -47,6 +47,85 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Profile fields
   const [displayName, setDisplayName] = useState(userProfile.displayName);
   const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // Work shifts (Lavoro) management
+  const [shifts, setShifts] = useState<WorkShift[]>(settings.workShifts || []);
+  const [shiftFormOpen, setShiftFormOpen] = useState(false);
+  const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+  const [shiftName, setShiftName] = useState('');
+  const [shiftStart, setShiftStart] = useState('07:00');
+  const [shiftEnd, setShiftEnd] = useState('14:00');
+  const [shiftColor, setShiftColor] = useState('#f59e0b');
+  const [savingShift, setSavingShift] = useState(false);
+
+  const resetShiftForm = () => {
+    setShiftFormOpen(false);
+    setEditingShiftId(null);
+    setShiftName('');
+    setShiftStart('07:00');
+    setShiftEnd('14:00');
+    setShiftColor('#f59e0b');
+  };
+
+  const startEditShift = (shift: WorkShift) => {
+    setShiftFormOpen(true);
+    setEditingShiftId(shift.id);
+    setShiftName(shift.name);
+    setShiftStart(shift.start);
+    setShiftEnd(shift.end);
+    setShiftColor(shift.color);
+  };
+
+  // Persists the given list and syncs local state
+  const persistShifts = async (next: WorkShift[]) => {
+    setSavingShift(true);
+    try {
+      await onUpdateSettings({ workShifts: next });
+      setShifts(next);
+      addToast('success', t('settings.successSettingsUpdated'));
+      return true;
+    } catch (e) {
+      console.error(e);
+      addToast('error', t('settings.errorSettingsUpdate'));
+      return false;
+    } finally {
+      setSavingShift(false);
+    }
+  };
+
+  const handleSaveShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shiftName.trim() || !shiftStart || !shiftEnd) {
+      addToast('error', t('settings.errorShiftFields'));
+      return;
+    }
+
+    let next: WorkShift[];
+    if (editingShiftId) {
+      next = shifts.map((s) =>
+        s.id === editingShiftId
+          ? { ...s, name: shiftName.trim(), start: shiftStart, end: shiftEnd, color: shiftColor }
+          : s
+      );
+    } else {
+      const newShift: WorkShift = {
+        id: `shift-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: shiftName.trim(),
+        start: shiftStart,
+        end: shiftEnd,
+        color: shiftColor,
+      };
+      next = [...shifts, newShift];
+    }
+
+    if (await persistShifts(next)) resetShiftForm();
+  };
+
+  const handleDeleteShift = async (shift: WorkShift) => {
+    if (!confirm(t('settings.confirmDeleteShift', { name: shift.name }))) return;
+    await persistShifts(shifts.filter((s) => s.id !== shift.id));
+    if (editingShiftId === shift.id) resetShiftForm();
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -284,6 +363,132 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </button>
             </div>
           </form>
+
+          {/* Work Shifts (Lavoro) Block */}
+          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-rose-600" /> {t('settings.workShiftsTitle')}
+              </h3>
+              {!shiftFormOpen && (
+                <button
+                  type="button"
+                  onClick={() => setShiftFormOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> {t('settings.addShift')}
+                </button>
+              )}
+            </div>
+
+            {/* Add / Edit Shift Form */}
+            {shiftFormOpen && (
+              <form onSubmit={handleSaveShift} className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('settings.shiftName')}</label>
+                  <input
+                    type="text"
+                    value={shiftName}
+                    onChange={(e) => setShiftName(e.target.value)}
+                    placeholder="Mattina PT"
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-xs transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('settings.shiftStart')}</label>
+                    <input
+                      type="time"
+                      value={shiftStart}
+                      onChange={(e) => setShiftStart(e.target.value)}
+                      required
+                      className="mt-1 block w-full px-2 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm font-mono shadow-xs transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('settings.shiftEnd')}</label>
+                    <input
+                      type="time"
+                      value={shiftEnd}
+                      onChange={(e) => setShiftEnd(e.target.value)}
+                      required
+                      className="mt-1 block w-full px-2 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm font-mono shadow-xs transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('settings.shiftColor')}</label>
+                    <input
+                      type="color"
+                      value={shiftColor}
+                      onChange={(e) => setShiftColor(e.target.value)}
+                      className="mt-1 block w-full h-9 rounded-lg border border-slate-200 cursor-pointer p-1 bg-white shadow-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={resetShiftForm}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" /> {t('taskModal.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingShift}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingShift ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    {editingShiftId ? t('taskModal.saveChanges') : t('settings.addShift')}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Shift List */}
+            {shifts.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">{t('settings.noShifts')}</p>
+            ) : (
+              <div className="space-y-2">
+                {shifts.map((shift) => (
+                  <div
+                    key={shift.id}
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/60 hover:bg-slate-50 transition-colors"
+                    style={{ borderLeft: `4px solid ${shift.color}` }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-4 h-4 rounded-sm shrink-0 border border-black/10" style={{ backgroundColor: shift.color }} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate leading-tight">{shift.name}</p>
+                        <p className="text-[10px] font-mono text-slate-500 leading-tight">{shift.start} - {shift.end}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      <button
+                        type="button"
+                        onClick={() => startEditShift(shift)}
+                        className="p-1.5 hover:bg-white rounded text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        title={t('settings.editShift')}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteShift(shift)}
+                        className="p-1.5 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                        title={t('settings.deleteShift')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Side: Account and Passwords */}

@@ -14,6 +14,7 @@ import { formatCurrency, currencies } from '../../currencies';
 import { motion } from 'motion/react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getLocale } from '../../i18n/translations';
+import { getTaskColor } from '../../utils/taskColor';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -392,7 +393,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ tasks, settings, a
                   <div
                     key={task.id}
                     className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50"
-                    style={{ borderLeft: `3px solid ${settings.categoryColors[task.category] || '#6366f1'}` }}
+                    style={{ borderLeft: `3px solid ${getTaskColor(task, settings)}` }}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <Clock className="w-4 h-4 text-slate-400 shrink-0" />

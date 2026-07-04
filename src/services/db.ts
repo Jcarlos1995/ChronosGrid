@@ -14,7 +14,8 @@ import {
   deleteDoc, 
   query, 
   where,
-  orderBy
+  orderBy,
+  deleteField
 } from 'firebase/firestore';
 import { 
   createUserWithEmailAndPassword, 
@@ -221,8 +222,14 @@ export class FirebaseTaskService implements ITaskService {
 
   async updateTask(id: string, updates: Partial<Task>): Promise<void> {
     const docRef = doc(db, TASKS_COLLECTION, id);
+    // undefined means "remove this field" (e.g. clearing a task's shift);
+    // otherwise ignoreUndefinedProperties would silently keep the old value
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      sanitized[key] = value === undefined ? deleteField() : value;
+    }
     try {
-      await updateDoc(docRef, updates);
+      await updateDoc(docRef, sanitized);
     } catch (e) {
       handleFirestoreError(e, OperationType.UPDATE, `${TASKS_COLLECTION}/${id}`);
     }
@@ -250,7 +257,18 @@ export class FirebaseSettingsService implements ISettingsService {
         'Work': '#ef4444',        // red
         'Personal': '#10b981',    // green
         'Other': '#8b5cf6'        // purple
-      }
+      },
+      // Default work shifts; users can add/edit/remove them in Settings
+      workShifts: [
+        { id: 'mattina-pt', name: 'Mattina PT', start: '07:00', end: '12:00', color: '#f59e0b' },
+        { id: 'mattina-ft', name: 'Mattina FT', start: '07:00', end: '14:00', color: '#f97316' },
+        { id: 'mattina', name: 'Mattina', start: '06:30', end: '13:30', color: '#eab308' },
+        { id: 'pomeriggio-1', name: 'Pomeriggio 1', start: '14:00', end: '21:00', color: '#0ea5e9' },
+        { id: 'pomeriggio-2', name: 'Pomeriggio 2', start: '14:30', end: '21:00', color: '#06b6d4' },
+        { id: 'notte', name: 'Notte', start: '21:00', end: '24:00', color: '#6366f1' },
+        { id: 'smonto', name: 'Smonto', start: '00:00', end: '06:30', color: '#a855f7' },
+        { id: 'riposo', name: 'Riposo', start: '00:00', end: '24:00', color: '#10b981' },
+      ]
     };
   }
 
