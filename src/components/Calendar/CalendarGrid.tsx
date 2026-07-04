@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock } from 'lucide-react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock } from 'lucide-react';
 import { Task, AppSettings } from '../../types';
 import { formatCurrency } from '../../currencies';
 import { motion } from 'motion/react';
@@ -29,6 +29,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   const { t, language } = useLanguage();
   const locale = getLocale(language);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [pickerOpen, setPickerOpen] = useState<'month' | 'year' | null>(null);
+  const currentYearRef = useRef<HTMLButtonElement | null>(null);
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth(); // 0-indexed
@@ -55,13 +57,29 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   };
 
-  const prevYear = () => {
-    setCurrentDate((d) => new Date(d.getFullYear() - 1, d.getMonth(), 1));
+  // Jump directly to a chosen month or year via the header pickers
+  const selectMonth = (monthIdx: number) => {
+    setCurrentDate((d) => new Date(d.getFullYear(), monthIdx, 1));
+    setPickerOpen(null);
   };
 
-  const nextYear = () => {
-    setCurrentDate((d) => new Date(d.getFullYear() + 1, d.getMonth(), 1));
+  const selectYear = (year: number) => {
+    setCurrentDate((d) => new Date(year, d.getMonth(), 1));
+    setPickerOpen(null);
   };
+
+  // Years offered by the year picker (±60 around today)
+  const years = useMemo(() => {
+    const base = new Date().getFullYear();
+    return Array.from({ length: 121 }, (_, i) => base - 60 + i);
+  }, []);
+
+  // Scroll the current year into view when the year picker opens
+  useEffect(() => {
+    if (pickerOpen === 'year' && currentYearRef.current) {
+      currentYearRef.current.scrollIntoView({ block: 'center' });
+    }
+  }, [pickerOpen]);
 
   // Reset to today
   const goToToday = () => {
@@ -143,11 +161,67 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
       {/* Calendar Header Controls */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 bg-slate-50">
-        <div className="flex items-center gap-3">
-          <CalendarIcon className="w-5 h-5 text-indigo-600" />
-          <h2 className="text-xl font-bold text-slate-900 font-sans tracking-tight">
-            {monthNames[currentMonth]} {currentYear}
-          </h2>
+        <div className="flex items-center gap-3 relative">
+          <CalendarIcon className="w-5 h-5 text-indigo-600 shrink-0" />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPickerOpen((p) => (p === 'month' ? null : 'month'))}
+              className="text-xl font-bold text-slate-900 font-sans tracking-tight capitalize px-2 py-0.5 rounded-lg hover:bg-slate-200/70 transition-colors cursor-pointer"
+              title={t('calendar.selectMonth')}
+            >
+              {monthNames[currentMonth]}
+            </button>
+            <button
+              onClick={() => setPickerOpen((p) => (p === 'year' ? null : 'year'))}
+              className="text-xl font-bold text-slate-900 font-sans tracking-tight px-2 py-0.5 rounded-lg hover:bg-slate-200/70 transition-colors cursor-pointer"
+              title={t('calendar.selectYear')}
+            >
+              {currentYear}
+            </button>
+          </div>
+
+          {/* Month / Year picker popover */}
+          {pickerOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setPickerOpen(null)} />
+              <div className="absolute top-full left-8 mt-2 z-40 bg-white border border-slate-200 rounded-xl shadow-lg p-3 w-72">
+                {pickerOpen === 'month' ? (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {monthNames.map((m, i) => (
+                      <button
+                        key={i}
+                        onClick={() => selectMonth(i)}
+                        className={`px-2 py-2 rounded-lg text-xs font-semibold capitalize transition-colors cursor-pointer ${
+                          i === currentMonth
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-4 gap-1.5 max-h-56 overflow-y-auto">
+                    {years.map((y) => (
+                      <button
+                        key={y}
+                        ref={y === currentYear ? currentYearRef : null}
+                        onClick={() => selectYear(y)}
+                        className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                          y === currentYear
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -157,13 +231,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             {t('calendar.today')}
           </button>
           <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
-            <button
-              onClick={prevYear}
-              className="p-1.5 hover:bg-slate-50 rounded text-slate-600 transition-colors cursor-pointer"
-              title={t('calendar.prevYear')}
-            >
-              <ChevronsLeft className="w-4 h-4" />
-            </button>
             <button
               onClick={prevMonth}
               className="p-1.5 hover:bg-slate-50 rounded text-slate-600 transition-colors cursor-pointer"
@@ -178,13 +245,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               title={t('calendar.nextMonth')}
             >
               <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={nextYear}
-              className="p-1.5 hover:bg-slate-50 rounded text-slate-600 transition-colors cursor-pointer"
-              title={t('calendar.nextYear')}
-            >
-              <ChevronsRight className="w-4 h-4" />
             </button>
           </div>
         </div>
