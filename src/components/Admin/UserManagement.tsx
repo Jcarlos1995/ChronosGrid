@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, UserRole, IUserService } from '../../types';
 import { FirebaseUserService } from '../../services/db';
 import { Users, UserPlus, Shield, Trash2, ArrowRightLeft, User, Mail, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { UserListSkeleton } from '../UI/Skeleton';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface UserManagementProps {
@@ -178,10 +179,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
             {loading ? (
-              <div className="flex flex-col items-center justify-center h-full py-12 text-slate-400">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
-                <p className="text-sm font-medium">{t('admin.retrieving')}</p>
-              </div>
+              <UserListSkeleton />
             ) : filteredUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12 text-slate-400">
                 <p className="text-sm font-semibold">{t('admin.noUsersFound')}</p>

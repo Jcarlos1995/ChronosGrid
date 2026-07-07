@@ -21,6 +21,7 @@ import { DesktopAppView } from './components/Desktop/DesktopAppView';
 import { UpdateAlert } from './components/Desktop/UpdateAlert';
 import { useDesktopUpdater } from './hooks/useDesktopUpdater';
 import { ToastContainer, ToastMessage } from './components/UI/Toast';
+import { AppShellSkeleton, CalendarSkeleton, DashboardSkeleton, SettingsSkeleton } from './components/UI/Skeleton';
 import {
   Calendar,
   BarChart,
@@ -31,7 +32,6 @@ import {
   Menu,
   X,
   User,
-  Loader2,
   Monitor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -172,12 +172,7 @@ export default function App() {
   };
 
   if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-2" />
-        <p className="text-sm font-semibold text-slate-500 font-mono">{t('app.initializing')}</p>
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (!user) {
@@ -357,13 +352,12 @@ export default function App() {
 
         {/* Core Body Container */}
         <div className="flex-1 p-6 md:p-8 space-y-6 overflow-y-auto max-w-7xl w-full mx-auto">
-          {loadingData && (
-            <div className="mb-4 bg-indigo-50/50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl text-xs font-semibold font-mono flex items-center gap-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('app.synchronizing')}
-            </div>
-          )}
-
           <div className="h-full min-h-[500px]">
+            {/* Content skeletons while the workspace data is loading */}
+            {activeTab === 'calendar' && !settings && <CalendarSkeleton />}
+            {activeTab === 'dashboard' && !settings && <DashboardSkeleton />}
+            {activeTab === 'settings' && !settings && <SettingsSkeleton />}
+
             {activeTab === 'calendar' && settings && (
               <div className="grid grid-cols-1 gap-6 h-full">
                 <CalendarGrid
