@@ -142,7 +142,9 @@ For each day column, read that employee's cell and output one object:
 - "start": start time as "HH:MM" (24h) if the cell contains a time range, else null
 - "end": end time as "HH:MM" (24h) if present, else null ("24.00" becomes "24:00")
 
-Important: if a cell's content is crossed out and replaced by a word (like "ferie"), use the replacement word as the label with null times. Normalize times written with dots or commas (7.00 / 7,00 -> "07:00").
+Important — crossed-out cells: some employees have an extra narrow row directly ABOVE their row, with words like "ferie" or "permesso" written over specific day columns. When the employee's cell for a day is crossed out (strikethrough line over the time), the real schedule is the word written directly above that cell in the same column: use that word as the label with null times, and ignore the crossed-out time. Only if there is no text above the crossed-out cell, use the crossed-out content itself. Cells that are NOT crossed out are normal: use their own content and ignore any annotation row.
+
+Normalize times written with dots or commas (7.00 / 7,00 -> "07:00").
 
 Respond with ONLY a JSON array of these objects, one per day column, in day order. If you cannot find the employee, respond with [].`;
 
