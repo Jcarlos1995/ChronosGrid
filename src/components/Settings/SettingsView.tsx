@@ -29,6 +29,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const { t, language, setLanguage } = useLanguage();
   const [currency, setCurrency] = useState(settings.currency);
   const [weekStartMonday, setWeekStartMonday] = useState(settings.weekStartMonday);
+  const [geminiApiKey, setGeminiApiKey] = useState(settings.geminiApiKey || '');
+  const [showApiKey, setShowApiKey] = useState(false);
 
   // Custom Category Colors
   const [appointmentColor, setAppointmentColor] = useState(settings.categoryColors['Appointment'] || '#3b82f6');
@@ -135,6 +137,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         currency,
         language,
         weekStartMonday,
+        geminiApiKey: geminiApiKey.trim(),
         categoryColors: {
           'Appointment': appointmentColor,
           'Work': workColor,
@@ -345,6 +348,40 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Gemini API Key (schedule photo import) */}
+            <div className="space-y-2 pt-4 border-t border-slate-200">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                <CircleAlert className="w-4 h-4 text-emerald-600" /> {t('settings.geminiApiKey')}
+              </h4>
+              <div className="relative rounded-lg shadow-xs">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="AIza..."
+                  className="block w-full pr-10 pl-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-mono shadow-xs transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-snug">
+                {t('settings.geminiApiKeyHint')}{' '}
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-500 hover:text-indigo-600 underline"
+                >
+                  aistudio.google.com/apikey
+                </a>
+              </p>
             </div>
 
             <div className="pt-3 border-t border-slate-200 flex justify-end">

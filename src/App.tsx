@@ -13,6 +13,7 @@ import { UserProfile, Task, AppSettings } from './types';
 import { AuthScreen } from './components/Auth/AuthScreen';
 import { CalendarGrid } from './components/Calendar/CalendarGrid';
 import { TaskModal } from './components/Calendar/TaskModal';
+import { ScheduleImportModal } from './components/Calendar/ScheduleImportModal';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { UserManagement } from './components/Admin/UserManagement';
@@ -51,6 +52,7 @@ export default function App() {
   // Modal state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   
   // Toast notifications state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -369,6 +371,7 @@ export default function App() {
                   settings={settings}
                   onDayClick={handleDayClick}
                   onAddTaskClick={handleQuickAddTask}
+                  onImportClick={() => setImportOpen(true)}
                   selectedDate={selectedDate}
                 />
               </div>
@@ -406,6 +409,16 @@ export default function App() {
       {/* Modal overlays — rendered conditionally (not via AnimatePresence) so it
           always unmounts reliably on close; the enter animation lives on the
           modal's inner motion.div. */}
+      {importOpen && settings && (
+        <ScheduleImportModal
+          settings={settings}
+          onClose={() => setImportOpen(false)}
+          onAddTask={handleAddTask}
+          onUpdateSettings={handleUpdateSettings}
+          addToast={addToast}
+        />
+      )}
+
       {modalOpen && selectedDate && settings && (
         <TaskModal
           dateStr={selectedDate}

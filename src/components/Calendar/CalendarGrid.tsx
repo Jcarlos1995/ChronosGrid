@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, DollarSign, CheckSquare, Clock, ImagePlus } from 'lucide-react';
 import { Task, AppSettings } from '../../types';
 import { formatCurrency } from '../../currencies';
 import { getTaskColor } from '../../utils/taskColor';
@@ -17,6 +17,7 @@ interface CalendarGridProps {
   settings: AppSettings;
   onDayClick: (date: string) => void;
   onAddTaskClick: (date: string) => void;
+  onImportClick: () => void;
   selectedDate: string | null;
 }
 
@@ -25,6 +26,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   settings,
   onDayClick,
   onAddTaskClick,
+  onImportClick,
   selectedDate,
 }) => {
   const { t, language } = useLanguage();
@@ -225,6 +227,14 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={onImportClick}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm active:scale-95 cursor-pointer"
+            title={t('calendar.loadSchedule')}
+          >
+            <ImagePlus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t('calendar.loadSchedule')}</span>
+          </button>
           <button
             onClick={goToToday}
             className="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm active:scale-95 cursor-pointer"

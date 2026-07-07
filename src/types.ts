@@ -46,6 +46,8 @@ export interface AppSettings {
   weekStartMonday: boolean;
   categoryColors: Record<string, string>;
   workShifts: WorkShift[];
+  geminiApiKey?: string; // user's own Gemini key for schedule photo import
+  scheduleWorkerName?: string; // the user's name as written on the shift table
 }
 
 export interface CurrencyConfig {
