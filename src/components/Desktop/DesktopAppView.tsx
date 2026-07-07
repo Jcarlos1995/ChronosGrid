@@ -8,7 +8,7 @@ import { Monitor, Download, CheckCircle, Info, AppWindow, RefreshCw, Layers } fr
 import { motion } from 'motion/react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 // Installer is hosted on GitHub Releases (asset attached to the vX.Y.Z tag)
 const INSTALLER_URL = `https://github.com/Jcarlos1995/ChronosGrid/releases/download/v${APP_VERSION}/ChronosGrid-Setup-${APP_VERSION}.exe`;
 const APP_SIZE = '111 MB';
