@@ -4,11 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, UserRole, IUserService } from '../../types';
+import { UserProfile, UserRole, IUserService, ApiKeyAssignment } from '../../types';
 import { FirebaseUserService } from '../../services/db';
-import { Users, UserPlus, Shield, Trash2, ArrowRightLeft, User, Mail, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { Users, UserPlus, Shield, Trash2, ArrowRightLeft, User, Mail, Search, RefreshCw, Loader2, KeyRound, X, Save } from 'lucide-react';
 import { UserListSkeleton } from '../UI/Skeleton';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { getLocale } from '../../i18n/translations';
+import { isAdminKeyActive } from '../../utils/geminiKey';
 
 interface UserManagementProps {
   currentUserProfile: UserProfile;
@@ -19,7 +21,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   currentUserProfile,
   addToast,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,12 +32,22 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [role, setRole] = useState<UserRole>('user');
   const [creating, setCreating] = useState(false);
 
+  // API key assignment (per-user)
+  const [assignments, setAssignments] = useState<Record<string, ApiKeyAssignment>>({});
+  const [apiFormUid, setApiFormUid] = useState<string | null>(null);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiExpiryInput, setApiExpiryInput] = useState('');
+  const [apiBusy, setApiBusy] = useState(false);
+
   const userService: IUserService = new FirebaseUserService();
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const allUsers = await userService.getAllUsers();
+      const [allUsers, apiAssignments] = await Promise.all([
+        userService.getAllUsers(),
+        userService.getApiKeyAssignments(),
+      ]);
       // Sort users: admins first, then by display name
       const sorted = allUsers.sort((a, b) => {
         if (a.role === 'admin' && b.role !== 'admin') return -1;
@@ -43,11 +55,79 @@ export const UserManagement: React.FC<UserManagementProps> = ({
         return a.displayName.localeCompare(b.displayName);
       });
       setUsers(sorted);
+      setAssignments(apiAssignments);
     } catch (e) {
       console.error(e);
       addToast('error', t('admin.errorFetchUsers'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const formatExpiry = (ts?: number) =>
+    ts ? new Date(ts).toLocaleDateString(getLocale(language), { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+
+  const openApiForm = (user: UserProfile) => {
+    const current = assignments[user.uid];
+    setApiFormUid(user.uid);
+    setApiKeyInput(current?.adminApiKey || '');
+    setApiExpiryInput(
+      current?.adminApiKeyExpiresAt
+        ? new Date(current.adminApiKeyExpiresAt).toISOString().slice(0, 10)
+        : ''
+    );
+  };
+
+  const closeApiForm = () => {
+    setApiFormUid(null);
+    setApiKeyInput('');
+    setApiExpiryInput('');
+  };
+
+  const handleAssignApi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!apiFormUid || !apiKeyInput.trim() || !apiExpiryInput) {
+      addToast('error', t('admin.errorApiFields'));
+      return;
+    }
+    // The key stays valid until the end of the chosen day
+    const [y, m, d] = apiExpiryInput.split('-').map(Number);
+    const expiresAt = new Date(y, m - 1, d, 23, 59, 59).getTime();
+
+    setApiBusy(true);
+    try {
+      await userService.assignApiKey(apiFormUid, apiKeyInput.trim(), expiresAt);
+      setAssignments((prev) => ({
+        ...prev,
+        [apiFormUid]: { adminApiKey: apiKeyInput.trim(), adminApiKeyExpiresAt: expiresAt },
+      }));
+      addToast('success', t('admin.successApiAssigned'));
+      closeApiForm();
+    } catch (err) {
+      console.error(err);
+      addToast('error', t('admin.errorApiAssign'));
+    } finally {
+      setApiBusy(false);
+    }
+  };
+
+  const handleRevokeApi = async (uid: string) => {
+    if (!confirm(t('admin.confirmRevokeApi'))) return;
+    setApiBusy(true);
+    try {
+      await userService.revokeApiKey(uid);
+      setAssignments((prev) => {
+        const next = { ...prev };
+        delete next[uid];
+        return next;
+      });
+      addToast('success', t('admin.successApiRevoked'));
+      if (apiFormUid === uid) closeApiForm();
+    } catch (err) {
+      console.error(err);
+      addToast('error', t('admin.errorApiAssign'));
+    } finally {
+      setApiBusy(false);
     }
   };
 
@@ -187,59 +267,143 @@ export const UserManagement: React.FC<UserManagementProps> = ({
             ) : (
               filteredUsers.map((user) => {
                 const isSelf = user.uid === currentUserProfile.uid;
+                const assignment = assignments[user.uid];
+                const apiActive = assignment ? isAdminKeyActive(assignment) : false;
+                const apiExpired = !!assignment && !apiActive;
                 return (
                   <div
                     key={user.uid}
-                    className="flex items-center justify-between p-4 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all shadow-xs"
+                    className="rounded-lg border border-slate-100 hover:border-slate-200 transition-all shadow-xs"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-slate-700 font-bold shrink-0 border border-slate-200">
-                        {user.displayName.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-slate-800 truncate text-sm">{user.displayName}</p>
-                          {isSelf && (
-                            <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 font-mono text-[9px] font-bold">
-                              {t('admin.you')}
-                            </span>
-                          )}
+                    <div className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg transition-all">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-slate-700 font-bold shrink-0 border border-slate-200">
+                          {user.displayName.charAt(0).toUpperCase()}
                         </div>
-                        <p className="text-xs text-slate-500 truncate font-mono mt-0.5">{user.email}</p>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-slate-800 truncate text-sm">{user.displayName}</p>
+                            {isSelf && (
+                              <span className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 font-mono text-[9px] font-bold">
+                                {t('admin.you')}
+                              </span>
+                            )}
+                            {apiActive && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-mono text-[9px] font-bold">
+                                <KeyRound className="w-2.5 h-2.5" />
+                                {t('admin.apiActiveUntil', { date: formatExpiry(assignment?.adminApiKeyExpiresAt) })}
+                              </span>
+                            )}
+                            {apiExpired && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 font-mono text-[9px] font-bold">
+                                <KeyRound className="w-2.5 h-2.5" />
+                                {t('admin.apiExpired')}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 truncate font-mono mt-0.5">{user.email}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0 ml-4">
-                      {/* Role Indicator Badge */}
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
-                        user.role === 'admin'
-                          ? 'bg-rose-50 border-rose-100 text-rose-700'
-                          : 'bg-slate-100 border-slate-200 text-slate-600'
-                      }`}>
-                        {roleLabel(user.role)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0 ml-4">
+                        {/* Role Indicator Badge */}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                          user.role === 'admin'
+                            ? 'bg-rose-50 border-rose-100 text-rose-700'
+                            : 'bg-slate-100 border-slate-200 text-slate-600'
+                        }`}>
+                          {roleLabel(user.role)}
+                        </span>
 
-                      {/* Admin Controls */}
-                      {!isSelf && (
+                        {/* Admin Controls */}
                         <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
                           <button
-                            onClick={() => handleToggleRole(user)}
-                            className="p-1.5 hover:bg-slate-50 rounded text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
-                            title={t('admin.toggleRoleTitle')}
+                            onClick={() => (apiFormUid === user.uid ? closeApiForm() : openApiForm(user))}
+                            className={`p-1.5 hover:bg-emerald-50 rounded transition-colors cursor-pointer ${
+                              apiActive ? 'text-emerald-600' : 'text-slate-500 hover:text-emerald-600'
+                            }`}
+                            title={t('admin.assignApiTitle')}
                           >
-                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                            <KeyRound className="w-3.5 h-3.5" />
                           </button>
-                          <div className="h-3.5 w-[1px] bg-slate-200" />
-                          <button
-                            onClick={() => handleDeleteUser(user)}
-                            className="p-1.5 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title={t('admin.deleteUserTitle')}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!isSelf && (
+                            <>
+                              <div className="h-3.5 w-[1px] bg-slate-200" />
+                              <button
+                                onClick={() => handleToggleRole(user)}
+                                className="p-1.5 hover:bg-slate-50 rounded text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                                title={t('admin.toggleRoleTitle')}
+                              >
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <div className="h-3.5 w-[1px] bg-slate-200" />
+                              <button
+                                onClick={() => handleDeleteUser(user)}
+                                className="p-1.5 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                title={t('admin.deleteUserTitle')}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
+
+                    {/* Inline API key assignment form */}
+                    {apiFormUid === user.uid && (
+                      <form onSubmit={handleAssignApi} className="border-t border-slate-100 bg-emerald-50/40 p-4 space-y-3 rounded-b-lg">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('settings.geminiApiKey')}</label>
+                          <input
+                            type="text"
+                            value={apiKeyInput}
+                            onChange={(e) => setApiKeyInput(e.target.value)}
+                            placeholder="AIza..."
+                            className="mt-1 block w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-sm font-mono shadow-xs transition-all"
+                          />
+                        </div>
+                        <div className="flex items-end gap-3 flex-wrap">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider">{t('admin.apiExpiryDate')}</label>
+                            <input
+                              type="date"
+                              value={apiExpiryInput}
+                              onChange={(e) => setApiExpiryInput(e.target.value)}
+                              min={new Date().toISOString().slice(0, 10)}
+                              className="mt-1 block px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-sm font-mono shadow-xs transition-all"
+                            />
+                          </div>
+                          <div className="flex gap-2 ml-auto">
+                            {assignment && (
+                              <button
+                                type="button"
+                                onClick={() => handleRevokeApi(user.uid)}
+                                disabled={apiBusy}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all disabled:opacity-50 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> {t('admin.revokeApi')}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={closeApiForm}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" /> {t('taskModal.cancel')}
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={apiBusy}
+                              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] tracking-wider uppercase transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                            >
+                              {apiBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                              {t('admin.assignApi')}
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 );
               })

@@ -33,7 +33,8 @@ import {
   ITaskService,
   ISettingsService,
   IUserService,
-  UserRole
+  UserRole,
+  ApiKeyAssignment
 } from '../types';
 import { getStoredLanguage } from '../i18n/translations';
 
@@ -318,6 +319,45 @@ export class FirebaseUserService implements IUserService {
       return users;
     } catch (e) {
       handleFirestoreError(e, OperationType.LIST, USERS_COLLECTION);
+    }
+  }
+
+  // Reads every settings doc (admin only per security rules) to know which
+  // users have an assigned API key and when it expires
+  async getApiKeyAssignments(): Promise<Record<string, ApiKeyAssignment>> {
+    try {
+      const snap = await getDocs(collection(db, SETTINGS_COLLECTION));
+      const map: Record<string, ApiKeyAssignment> = {};
+      snap.forEach((d) => {
+        const data = d.data();
+        if (data.adminApiKey) {
+          map[d.id] = {
+            adminApiKey: data.adminApiKey,
+            adminApiKeyExpiresAt: data.adminApiKeyExpiresAt,
+          };
+        }
+      });
+      return map;
+    } catch (e) {
+      handleFirestoreError(e, OperationType.LIST, SETTINGS_COLLECTION);
+    }
+  }
+
+  async assignApiKey(uid: string, apiKey: string, expiresAt: number): Promise<void> {
+    const docRef = doc(db, SETTINGS_COLLECTION, uid);
+    try {
+      await setDoc(docRef, { adminApiKey: apiKey, adminApiKeyExpiresAt: expiresAt }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, `${SETTINGS_COLLECTION}/${uid}`);
+    }
+  }
+
+  async revokeApiKey(uid: string): Promise<void> {
+    const docRef = doc(db, SETTINGS_COLLECTION, uid);
+    try {
+      await setDoc(docRef, { adminApiKey: deleteField(), adminApiKeyExpiresAt: deleteField() }, { merge: true });
+    } catch (e) {
+      handleFirestoreError(e, OperationType.UPDATE, `${SETTINGS_COLLECTION}/${uid}`);
     }
   }
 

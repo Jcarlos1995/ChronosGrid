@@ -48,6 +48,8 @@ export interface AppSettings {
   workShifts: WorkShift[];
   geminiApiKey?: string; // user's own Gemini key for schedule photo import
   scheduleWorkerName?: string; // the user's name as written on the shift table
+  adminApiKey?: string; // Gemini key assigned by an administrator
+  adminApiKeyExpiresAt?: number; // timestamp (ms) when the assigned key expires
 }
 
 export interface CurrencyConfig {
@@ -76,9 +78,18 @@ export interface ISettingsService {
   updateSettings(userId: string, updates: Partial<AppSettings>): Promise<void>;
 }
 
+// Admin-assigned API key info per user, shown in the admin panel
+export interface ApiKeyAssignment {
+  adminApiKey?: string;
+  adminApiKeyExpiresAt?: number;
+}
+
 export interface IUserService {
   getAllUsers(): Promise<UserProfile[]>;
   createUser(email: string, role: UserRole, displayName: string): Promise<UserProfile>;
   updateUserRole(uid: string, role: UserRole): Promise<void>;
   deleteUser(uid: string): Promise<void>;
+  getApiKeyAssignments(): Promise<Record<string, ApiKeyAssignment>>;
+  assignApiKey(uid: string, apiKey: string, expiresAt: number): Promise<void>;
+  revokeApiKey(uid: string): Promise<void>;
 }

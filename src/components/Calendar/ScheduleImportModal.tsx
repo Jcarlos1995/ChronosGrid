@@ -9,6 +9,7 @@ import { motion } from 'motion/react';
 import { Task, AppSettings, WorkShift } from '../../types';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getLocale } from '../../i18n/translations';
+import { getEffectiveGeminiKey } from '../../utils/geminiKey';
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
@@ -74,7 +75,8 @@ export const ScheduleImportModal: React.FC<ScheduleImportModalProps> = ({
   const [entries, setEntries] = useState<ParsedEntry[] | null>(null);
   const [checked, setChecked] = useState<boolean[]>([]);
 
-  const apiKey = (settings.geminiApiKey || '').trim();
+  // The user's own key wins; otherwise the admin-assigned key while valid
+  const apiKey = getEffectiveGeminiKey(settings).key || '';
   const workShifts = settings.workShifts || [];
 
   useEffect(() => {

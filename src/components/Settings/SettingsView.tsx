@@ -11,7 +11,9 @@ import { currencies } from '../../currencies';
 import { Settings, Save, Lock, CircleAlert, Globe, Palette, Info, CheckCircle, Eye, EyeOff, Loader2, Briefcase, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { getLocale } from '../../i18n/translations';
 import { LanguageSelect } from '../UI/LanguageSelect';
+import { isAdminKeyActive } from '../../utils/geminiKey';
 
 interface SettingsViewProps {
   userProfile: UserProfile;
@@ -355,6 +357,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                 <CircleAlert className="w-4 h-4 text-emerald-600" /> {t('settings.geminiApiKey')}
               </h4>
+
+              {/* Admin-assigned key status */}
+              {isAdminKeyActive(settings) && (
+                <div className="flex items-start gap-2.5 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-emerald-800">{t('settings.adminKeyAssigned')}</p>
+                    <p className="text-[10px] text-emerald-700 mt-0.5">
+                      {t('settings.adminKeyValidUntil', {
+                        date: new Date(settings.adminApiKeyExpiresAt || 0).toLocaleDateString(getLocale(language), { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!!settings.adminApiKey && !isAdminKeyActive(settings) && (
+                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <CircleAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800">
+                    {t('settings.adminKeyExpired', {
+                      date: new Date(settings.adminApiKeyExpiresAt || 0).toLocaleDateString(getLocale(language), { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                    })}
+                  </p>
+                </div>
+              )}
               <div className="relative rounded-lg shadow-xs">
                 <input
                   type={showApiKey ? 'text' : 'password'}
